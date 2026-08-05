@@ -1,0 +1,51 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load data
+df = pd.read_csv("/content/sample_data/powerconsumption[1].csv")
+
+# Parse datetime
+df['datetime'] = pd.to_datetime(df['Datetime'])
+df['date'] = df['datetime'].dt.date
+df['hour'] = df['datetime'].dt.hour
+df['day_of_week'] = df['datetime'].dt.day_name()
+
+# Check for missing values
+print(df.isnull().sum())
+
+# Create total consumption column
+df['total_consumption'] = df[['PowerConsumption_Zone1', 'PowerConsumption_Zone2', 'PowerConsumption_Zone3']].sum(axis=1)
+
+# Aggregate daily consumption
+daily = df.groupby('date')['total_consumption'].mean().reset_index()
+
+# Plot
+plt.figure(figsize=(12,5))
+sns.lineplot(data=daily, x='date', y='total_consumption', marker='o')
+plt.title("Daily Electricity Consumption (Jan 1–6, 2017)")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Pivot data for heatmap
+heatmap_data = df.pivot_table(
+    index='hour',
+    columns='day_of_week',
+    values='total_consumption',
+    aggfunc='mean'
+)
+
+# Plot heatmap
+plt.figure(figsize=(10,8))
+sns.heatmap(heatmap_data, cmap='YlOrRd', annot=False)
+plt.title("Average Consumption: Hour of Day vs Day of Week")
+plt.tight_layout()
+plt.show()
+
+# Correlation matrix
+corr = df[['total_consumption', 'Temperature', 'Humidity', 'WindSpeed']].corr()
+sns.heatmap(corr, annot=True, cmap='coolwarm')
+plt.show()
+
